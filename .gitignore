@@ -1,1 +1,6 @@
 environment.yml
+dbschema/
+.env
+.venv
+edgedb.toml
+.streamlit
