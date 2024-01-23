@@ -1,0 +1,4 @@
+python-dotenv
+streamlit==1.30.0
+edgedb
+plotly
