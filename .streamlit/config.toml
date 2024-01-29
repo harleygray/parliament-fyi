@@ -1,0 +1,3 @@
+[server]
+# Automatically rerun script when the file is modified on disk.
+runOnSave = true
