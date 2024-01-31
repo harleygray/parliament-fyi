@@ -183,9 +183,6 @@ def background_image(content1, content2):
     )
 
 
-
-
-
     # st.markdown(f'<h1 style="text-align:center;background-image: linear-gradient(to right,{color1}, {color2});font-size:60px;border-radius:2%;">'
     #             f'<span style="color:{color3};">{content1}</span><br>'
     #             f'<span style="color:white;font-size:17px;">{content2}</span></h1>', 
@@ -260,6 +257,7 @@ def query_member_records(_client, input_postcode):
             "party": obj.party_name,
             "house": str(obj.house),
             "division_name": vote.division.name,
+            "division_summary": vote.division.summary,
             "vote": str(vote.vote),
             "category": vote.division.division_category,
         }
@@ -275,7 +273,6 @@ def main():
     # Load environment variables
     load_dotenv()
     EDGEDB_INSTANCE = os.environ["EDGEDB_INSTANCE"]
-    
     EDGEDB_SECRET_KEY = os.environ["EDGEDB_SECRET_KEY"]
 
     # Streamlit UI setup
@@ -284,6 +281,11 @@ def main():
         page_title="parliament.fyi", 
         initial_sidebar_state="collapsed",
         layout="centered")
+
+    # Header
+    background_image("parliament.fyi", "providing transparency into the Australian federal government")
+    st.write()
+
 
     # EdgeDB client
     client = edgedb.create_client()
@@ -329,21 +331,26 @@ def main():
         
     #     st.dataframe(pivot_df)
 
-    
+    postcode, house, category = st.columns(3)
     
     # Select one division at random
     random_state = 0
     # with st.form(key='random_division'):
+
     # Return the voting records of all members representing the postcode
-    input_postcode = st.number_input('enter your postcode', min_value=0, max_value=7999, value=4000)
+    with postcode: 
+        input_postcode = st.number_input('enter your postcode', min_value=0, max_value=7999, value=4000)
     member_records = query_member_records(client, input_postcode=input_postcode)
 
     # Filter by house
-    selected_house = st.radio("choose house", options=["representatives","senate"])
+    with house:
+        selected_house = st.radio("choose house", options=["representatives","senate"])
 
     # Filter by division_category
     division_categories = client.query("select distinct(parliament::Division.division_category);")
-    selected_division_category =  st.radio(label='filter by type of division', options=list(division_categories))
+    with category:
+
+        selected_division_category =  st.selectbox(label='filter by type of division', options=list(division_categories))
 
     # Filter the DataFrame by selected house and selected division category
     filtered_records = member_records.loc[
@@ -351,28 +358,34 @@ def main():
         (member_records["category"] == selected_division_category)
     ]
     
-    st.write(filtered_records.sample(n=1))
-    st.form_submit_button(label='new random division')
+    div = filtered_records.sample(n=1, random_state=random_state)
+    #st.form_submit_button(label='new random division')
+    st.write(div)
+    # Division Name
+    st.header(div['division_name'].iloc[0])
+    st.write(div['division_summary'].iloc[0])
+    # Division Summary
 
-    
+    # for each member:
+    # name, party, picture
     
     # Pivot the DataFrame to get one column per member
     #pivot_df = df.pivot_table(index="division_name", columns="member_name", values="vote", aggfunc='first')
     
-    st.dataframe(pivot_df)
+    #st.dataframe(pivot_df)
 
 
 
 
 
     
-    # Set initial state
-    keys = ['divisions', 'senate', 'representatives', 'selected_division']
-    default_values = [None, None, None, None]
+    # # Set initial state
+    # keys = ['divisions', 'senate', 'representatives', 'selected_division']
+    # default_values = [None, None, None, None]
 
-    for key, default_value in zip(keys, default_values):
-        if key not in st.session_state:
-            st.session_state[key] = default_value
+    # for key, default_value in zip(keys, default_values):
+    #     if key not in st.session_state:
+    #         st.session_state[key] = default_value
 
     
 
@@ -380,9 +393,7 @@ def main():
     #st.write(type(st.session_state['divisions']))
     #st.write(sum(1 for item in st.session_state['divisions'].values() if item['house'] == 'senate'))
 
-    # Header
-    background_image("parliament.fyi", "providing transparency into the Australian federal government")
-    st.write()
+
 
     #st.markdown(photo_html, unsafe_allow_html=True)
     
