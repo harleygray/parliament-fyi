@@ -9,6 +9,7 @@ import base64
 import edgedb
 from itertools import groupby
 from operator import attrgetter
+from utils.edgedb_queries import return_divisions
 
 @st.cache_data()
 def plotly_vote_breakdown(individual_votes, visible_parties):
@@ -188,41 +189,7 @@ def background_image(content1, content2):
     #             f'<span style="color:white;font-size:17px;">{content2}</span></h1>', 
     #             unsafe_allow_html=True)
 
-@st.cache_data
-def return_divisions(_client, selected_member_names, selected_division_category):
-    query = """
-        with member := (
-            select parliament::Member 
-            filter .full_name in array_unpack(<array<str>>$selected_member_names)
-        )
-        select parliament::Division {**} {
-            division_name := .name,
-            member_votes := (
-                select .votes {
-                    member_name := .member.full_name,
-                    vote := .vote
-                }
-                filter .member.full_name in array_unpack(<array<str>>$selected_member_names)     
-            )
-        } 
-        filter .division_category = <str>$selected_division_category"""
 
-    divisions = _client.query(query, selected_member_names=selected_member_names, selected_division_category=selected_division_category)
-    
-    # Flatten the data
-    flattened_data = [
-        {
-            "division_name": obj.division_name,
-            "member_name": vote.member_name,
-            "vote": str(vote.vote),
-        }
-        for obj in divisions
-        for vote in obj.member_votes
-    ]
-
-    # Create a DataFrame
-    df = pd.DataFrame(flattened_data)
-    return df
 
 @st.cache_data
 def query_member_records(_client, input_postcode):
